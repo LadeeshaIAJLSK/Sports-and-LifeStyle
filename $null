@@ -1,0 +1,26 @@
+ERROR: The process "node.exe" with PID 16360 could not be terminated.
+Reason: There is no running instance of the task.
+ERROR: The process "node.exe" with PID 34480 could not be terminated.
+Reason: There is no running instance of the task.
+ERROR: The process "node.exe" with PID 7512 could not be terminated.
+Reason: There is no running instance of the task.
+ERROR: The process "node.exe" with PID 45580 could not be terminated.
+Reason: There is no running instance of the task.
+Remove-Item : A positional parameter cannot be found that accepts argument '/q'.
+At line:1 char:28
++ taskkill /F /IM node.exe ; rmdir /s /q .expo ; npx expo start --clear
++                            ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Remove-Item], ParameterBindingExcep 
+   tion
+    + FullyQualifiedErrorId : PositionalParameterNotFound,Microsoft.PowerShell.Commands 
+   .RemoveItemCommand
+ 
+[33mThe following packages should be updated for best compatibility with the installed [1mexpo[22m version:[39m
+[33m  [1mexpo[22m[36m@[39m[33m[31m54.0.23[39m[33m - expected version: [32m~54.0.25[39m[33m[39m
+[33m  [1mexpo-linking[22m[36m@[39m[33m[31m8.0.8[39m[33m - expected version: [32m~8.0.9[39m[33m[39m
+[33m  [1mexpo-router[22m[36m@[39m[33m[31m6.0.14[39m[33m - expected version: [32m~6.0.15[39m[33m[39m
+[33m  [1mexpo-splash-screen[22m[36m@[39m[33m[31m31.0.10[39m[33m - expected version: [32m~31.0.11[39m[33m[39m
+[33mYour project may not work correctly until you install the expected versions of the packages.[39m
+"shadow*" style props are deprecated. Use "boxShadow".
+"shadow*" style props are deprecated. Use "boxShadow".
+"shadow*" style props are deprecated. Use "boxShadow".

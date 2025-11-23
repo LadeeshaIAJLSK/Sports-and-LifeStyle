@@ -1,0 +1,21 @@
+/* Hide Expo Router web header */
+[role="banner"] {
+  display: none !important;
+}
+
+/* Also hide by class if it exists */
+.expo-router-header {
+  display: none !important;
+}
+
+/* Hide any navigation-related divs */
+nav[aria-label="Routing"],
+nav[aria-label="routing"] {
+  display: none !important;
+}
+
+/* Alternative selectors for the Expo Router UI */
+[data-testid="expo-router-header"],
+.expo-dev-client-header {
+  display: none !important;
+}
