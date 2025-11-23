@@ -12,7 +12,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { store, persistor } from '@/store';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: 'index',
 };
 
 export default function RootLayout() {
@@ -41,10 +41,10 @@ export default function RootLayout() {
         <ThemeProvider>
           <AuthProvider>
             <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-              <Stack>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
               </Stack>
               <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
             </NavigationThemeProvider>

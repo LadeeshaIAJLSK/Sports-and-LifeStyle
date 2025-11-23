@@ -10,8 +10,16 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: primaryColor,
+        tabBarActiveTintColor: '#A8FF00',
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#E8EBED',
+          height: 110,
+          paddingBottom: 8,
+          paddingTop: 4,
+        },
       }}
     >
       <Tabs.Screen
@@ -32,16 +40,24 @@ export default function TabLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
-  name="players"
-  options={{
-    title: 'Players',
-    tabBarIcon: ({ color, focused }) => (
-      <Feather name="users" size={24} color={focused ? '#A8FF00' : color} />
-    ),
-  }}
-/>
+        name="players"
+        options={{
+          title: 'Players',
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="users" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="user" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

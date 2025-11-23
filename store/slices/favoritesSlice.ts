@@ -1,30 +1,43 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { Team } from '@/types';
 
-interface FavoritesState {
-  favorites: Team[];
+interface Favorite {
+  idTeam?: string;
+  idPlayer?: string;
+  strTeam?: string;
+  strPlayer?: string;
+  strTeamBadge?: string;
+  strThumb?: string;
+  strLeague?: string;
+  strPosition?: string;
 }
 
 interface FavoritesState {
-  favorites: Team[];
+  favorites: Favorite[];
 }
 
 const initialState: FavoritesState = {
   favorites: [],
 };
 
-export const favoritesSlice = createSlice({
+const favoritesSlice = createSlice({
   name: 'favorites',
   initialState,
   reducers: {
-    addFavorite: (state, action: PayloadAction<Team>) => {
-      if (!state.favorites.some(team => team.idTeam === action.payload.idTeam)) {
+    addFavorite: (state, action: PayloadAction<Favorite>) => {
+      const exists = state.favorites.some(
+        (fav) =>
+          (fav.idTeam && fav.idTeam === action.payload.idTeam) ||
+          (fav.idPlayer && fav.idPlayer === action.payload.idPlayer)
+      );
+      if (!exists) {
         state.favorites.push(action.payload);
       }
     },
-    removeFavorite: (state, action: PayloadAction<Team>) => {
+    removeFavorite: (state, action: PayloadAction<Favorite>) => {
       state.favorites = state.favorites.filter(
-        team => team.idTeam !== action.payload.idTeam
+        (fav) =>
+          fav.idTeam !== action.payload.idTeam &&
+          fav.idPlayer !== action.payload.idPlayer
       );
     },
     clearFavorites: (state) => {
@@ -34,5 +47,4 @@ export const favoritesSlice = createSlice({
 });
 
 export const { addFavorite, removeFavorite, clearFavorites } = favoritesSlice.actions;
-
 export default favoritesSlice.reducer;

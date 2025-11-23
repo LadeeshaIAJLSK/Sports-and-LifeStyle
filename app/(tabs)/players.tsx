@@ -17,6 +17,8 @@ import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
+const LOGO = require('@/assets/images/logo.png');
+
 const SPORTS_API_BASE = 'https://www.thesportsdb.com/api/v1/json/3';
 
 interface Player {
@@ -35,7 +37,7 @@ interface Player {
 
 export default function PlayersScreen() {
   const dispatch = useAppDispatch();
-  const favoriteTeams = useAppSelector((state) => state.favorites.favorites);
+  const favoriteTeams = useAppSelector((state) => state.favorites?.favorites || []);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -91,7 +93,6 @@ export default function PlayersScreen() {
     await fetchPlayers();
     setRefreshing(false);
   };
-
   const isFavoritePlayer = (playerId: string) => {
     return favoriteTeams.some((fav: any) => fav.idPlayer === playerId);
   };
@@ -133,12 +134,11 @@ export default function PlayersScreen() {
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoEmoji}>⚽</Text>
-          </View>
-          <Text style={styles.headerTitle}>Players</Text>
-        </View>
+        <Image 
+          source={LOGO}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.headerIcon}>
             <Feather name="bell" size={20} color="#1A1A1A" />
@@ -207,7 +207,7 @@ export default function PlayersScreen() {
               >
                 {/* Card Background Gradient */}
                 <LinearGradient
-                  colors={['#667eea', '#764ba2']}
+                  colors={['#FF4757', '#764ba2']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.cardGradient}
@@ -302,6 +302,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: 48,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#E8EBED',
@@ -311,26 +312,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  logoCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#A8FF00',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoEmoji: {
-    fontSize: 20,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+  logoImage: {
+    width: 120,
+    height: 50,
   },
   headerRight: {
     flexDirection: 'row',
@@ -418,24 +402,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playersGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
     paddingBottom: 100,
   },
   playerCard: {
-    width: '47.5%',
+    width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+    marginBottom: 8,
+    flexDirection: 'row',
   },
   cardGradient: {
-    height: 180,
+    height: 140,
+    width: '35%',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -447,24 +432,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playerImage: {
-    width: 120,
-    height: 160,
+    width: 90,
+    height: 120,
   },
   playerImagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   favoriteButton: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 8,
+    right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
-    padding: 8,
+    padding: 6,
     zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -473,54 +458,56 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   cardContent: {
-    padding: 16,
+    padding: 12,
+    flex: 1,
+    justifyContent: 'center',
   },
   playerName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#1A1A1A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   playerTeam: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#666',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   playerDetails: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 6,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   detailText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#666',
     fontWeight: '600',
   },
   numberBadge: {
     backgroundColor: '#A8FF00',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    fontSize: 11,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#000',
   },
   nationalityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingTop: 8,
+    gap: 3,
+    paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
   nationalityText: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#999',
     fontWeight: '500',
   },

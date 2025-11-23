@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, View, Text, TouchableOpacity, RefreshControl, Image, ActivityIndicator } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
@@ -7,6 +8,9 @@ import { addFavorite, removeFavorite } from '@/store/slices/favoritesSlice';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '@/contexts/AuthContext';
+
+const LOGO = require('@/assets/images/logo.png');
 
 // Sports API Configuration
 const SPORTS_API_BASE = 'https://www.thesportsdb.com/api/v1/json/3';
@@ -30,12 +34,13 @@ interface Match {
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
-  const favoriteTeams = useAppSelector((state) => state.favorites.favorites);
+  const favorites = useAppSelector((state) => state.favorites?.favorites || []);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchMatches();
@@ -112,15 +117,30 @@ export default function HomeScreen() {
     return `${year}-${month}-${day}`;
   };
 
-  const isFavorite = (teamId: string) => {
-    return favoriteTeams.some((fav: any) => fav.idTeam === teamId);
+  const isFavorite = (matchId: string) => {
+    if (!favorites || !Array.isArray(favorites)) return false;
+    return favorites.some((fav: any) => fav.idEvent === matchId);
   };
 
-  const toggleFavorite = (team: any) => {
-    if (isFavorite(team.idTeam)) {
-      dispatch(removeFavorite(team));
+  const toggleFavorite = (match: Match) => {
+    const favoriteData = {
+      idEvent: match.idEvent,
+      strEvent: match.strEvent,
+      strHomeTeam: match.strHomeTeam,
+      strAwayTeam: match.strAwayTeam,
+      strHomeTeamBadge: match.strHomeTeamBadge,
+      strAwayTeamBadge: match.strAwayTeamBadge,
+      strLeague: match.strLeague,
+      dateEvent: match.dateEvent,
+      strTime: match.strTime,
+    };
+
+    if (isFavorite(match.idEvent)) {
+      dispatch(removeFavorite(favoriteData));
+      console.log('❌ Removed from favorites');
     } else {
-      dispatch(addFavorite(team));
+      dispatch(addFavorite(favoriteData));
+      console.log('✅ Added to favorites');
     }
   };
 
@@ -150,9 +170,11 @@ export default function HomeScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>⚽ Sportify</Text>
-          </View>
+          <Image 
+            source={LOGO}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#A8FF00" />
@@ -166,14 +188,13 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoEmoji}>⚽</Text>
-          </View>
-          <Text style={styles.headerTitle}>Sportify</Text>
-        </View>
+        <Image 
+          source={LOGO}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <View style={styles.headerRight}>
-          <Text style={styles.welcomeText}>Welcome, gg!</Text>
+          <Text style={styles.welcomeText}>Welcome, {user?.firstName || 'User'}!</Text>
           <TouchableOpacity style={styles.headerIcon}>
             <Feather name="bell" size={22} color="#333" />
           </TouchableOpacity>
@@ -347,19 +368,14 @@ export default function HomeScreen() {
                   style={styles.favoriteButton}
                   onPress={(e) => {
                     e.stopPropagation();
-                    toggleFavorite({
-                      idTeam: match.strHomeTeam,
-                      strTeam: match.strHomeTeam,
-                      strTeamBadge: match.strHomeTeamBadge || '',
-                      strLeague: match.strLeague,
-                    });
+                    toggleFavorite(match);
                   }}
                 >
                   <Feather
                     name="heart"
                     size={18}
-                    color={isFavorite(match.strHomeTeam) ? '#FF4757' : '#999'}
-                    fill={isFavorite(match.strHomeTeam) ? '#FF4757' : 'transparent'}
+                    color={isFavorite(match.idEvent) ? '#FF4757' : '#999'}
+                    fill={isFavorite(match.idEvent) ? '#FF4757' : 'transparent'}
                   />
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -374,7 +390,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -382,6 +398,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: 48,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#E8EBED',
@@ -395,6 +412,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  logoImage: {
+    width: 120,
+    height: 50,
   },
   logoCircle: {
     width: 40,
@@ -511,26 +532,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   matchesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
+    gap: 0,
     paddingBottom: 100,
   },
   matchCard: {
-    width: '47.5%',
+    width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+    marginBottom: 12,
   },
   cardHeader: {
     backgroundColor: '#FF4757',
-    paddingTop: 24,
-    paddingBottom: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -546,7 +566,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
     paddingHorizontal: 12,
   },
   teamLogoContainer: {
@@ -554,15 +574,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   leftLogo: {
-    marginRight: -15,
+    marginRight: -12,
   },
   rightLogo: {
-    marginLeft: -15,
+    marginLeft: -12,
   },
   logoCircleWhite: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -612,55 +632,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cardContent: {
-    padding: 16,
+    padding: 14,
   },
   matchTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: 4,
-    lineHeight: 18,
+    marginBottom: 3,
+    lineHeight: 16,
   },
   leagueText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#999',
-    marginBottom: 16,
+    marginBottom: 12,
+    fontWeight: '500',
   },
   scoreSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    gap: 8,
+    justifyContent: 'space-around',
+    marginBottom: 12,
+    gap: 4,
   },
   scoreBox: {
-    flex: 1,
+    flex: 0.28,
     alignItems: 'center',
   },
   scoreLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#999',
-    marginBottom: 4,
+    marginBottom: 2,
     fontWeight: '600',
   },
   scoreValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1A1A1A',
   },
   statusBadge: {
+    flex: 0.44,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#F5F5F5',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: '#999',
   },
   statusDotLive: {
@@ -670,34 +693,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: '#666',
   },
   dateTimeRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
   dateTimeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    flex: 1,
+    justifyContent: 'center',
   },
   dateTimeText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#999',
     fontWeight: '500',
   },
   favoriteButton: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: 12,
+    right: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 25,
-    padding: 8,
+    padding: 7,
     zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

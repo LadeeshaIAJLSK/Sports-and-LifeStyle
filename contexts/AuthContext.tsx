@@ -1,23 +1,20 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Platform } from 'react-native';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
 
-export interface User {
+interface User {
   id: string;
+  email: string;
   firstName: string;
   lastName: string;
-  email: string;
-  username?: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: RegisterData) => Promise<boolean>;
+  register: (data: RegisterData) => Promise<boolean>;
   logout: () => Promise<void>;
-  isAuthenticated: boolean;
 }
 
 interface RegisterData {
@@ -27,189 +24,157 @@ interface RegisterData {
   password: string;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  login: async () => false,
+  register: async () => false,
+  logout: async () => {},
+});
 
-const AUTH_TOKEN_KEY = 'auth_token';
-const USER_DATA_KEY = 'user_data';
-
-// Check if localStorage is available
-const isLocalStorageAvailable = () => {
-  try {
-    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
-  } catch (e) {
-    return false;
-  }
-};
-
-// Helper functions to handle both web and native platforms
-const setStorageItem = async (key: string, value: string): Promise<void> => {
-  try {
-    if (Platform.OS === 'web' && isLocalStorageAvailable()) {
-      localStorage.setItem(key, value);
-    } else {
-      await SecureStore.setItemAsync(key, value);
-    }
-  } catch (error) {
-    console.error(`Error setting storage for key ${key}:`, error);
-  }
-};
-
-const getStorageItem = async (key: string): Promise<string | null> => {
-  try {
-    if (Platform.OS === 'web' && isLocalStorageAvailable()) {
-      return localStorage.getItem(key);
-    } else {
-      return await SecureStore.getItemAsync(key);
-    }
-  } catch (error) {
-    console.error(`Error getting storage for key ${key}:`, error);
-    return null;
-  }
-};
-
-const removeStorageItem = async (key: string): Promise<void> => {
-  try {
-    if (Platform.OS === 'web' && isLocalStorageAvailable()) {
-      localStorage.removeItem(key);
-    } else {
-      await SecureStore.deleteItemAsync(key);
-    }
-  } catch (error) {
-    console.error(`Error removing storage for key ${key}:`, error);
-  }
-};
-
-// Mock API functions - replace with real API calls
-const mockLogin = async (email: string, password: string): Promise<{ user: User; token: string } | null> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Mock validation - in real app, this would be API call
-  if (email && password.length >= 6) {
-    return {
-      user: {
-        id: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: email,
-        username: email.split('@')[0]
-      },
-      token: 'mock_jwt_token_' + Date.now()
-    };
-  }
-  return null;
-};
-
-const mockRegister = async (userData: RegisterData): Promise<{ user: User; token: string } | null> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Mock validation
-  if (userData.email && userData.password.length >= 6) {
-    return {
-      user: {
-        id: Date.now().toString(),
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        username: userData.email.split('@')[0]
-      },
-      token: 'mock_jwt_token_' + Date.now()
-    };
-  }
-  return null;
-};
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing auth token on app start
   useEffect(() => {
-    checkAuthToken();
+    loadUser();
   }, []);
 
-  const checkAuthToken = async () => {
+  const loadUser = async () => {
     try {
-      const token = await getStorageItem(AUTH_TOKEN_KEY);
-      const userData = await getStorageItem(USER_DATA_KEY);
+      const userData = await AsyncStorage.getItem('user');
+      console.log('💾 Loading user from storage:', userData);
       
-      if (token && userData) {
-        setUser(JSON.parse(userData));
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        console.log('✅ User loaded:', parsedUser);
+      } else {
+        console.log('❌ No user found in storage');
       }
     } catch (error) {
-      console.error('Error checking auth token:', error);
+      console.error('❌ Error loading user:', error);
     } finally {
       setIsLoading(false);
+      console.log('✅ Auth context loaded');
     }
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      setIsLoading(true);
-      const response = await mockLogin(email, password);
+      console.log('🔐 Attempting login for:', email);
       
-      if (response) {
-        await setStorageItem(AUTH_TOKEN_KEY, response.token);
-        await setStorageItem(USER_DATA_KEY, JSON.stringify(response.user));
-        setUser(response.user);
+      // Get existing users from storage
+      const usersData = await AsyncStorage.getItem('users');
+      const users = usersData ? JSON.parse(usersData) : [];
+      
+      console.log('👥 Checking against users:', users.length);
+      
+      // Find user with matching credentials
+      const foundUser = users.find((u: any) => 
+        u.email.toLowerCase() === email.toLowerCase() && 
+        u.password === password
+      );
+      
+      if (foundUser) {
+        const userData = {
+          id: foundUser.id,
+          email: foundUser.email,
+          firstName: foundUser.firstName,
+          lastName: foundUser.lastName,
+        };
+        
+        // Save current user
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+        
+        console.log('✅ Login successful:', userData);
         return true;
       }
+      
+      console.log('❌ Invalid credentials');
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const register = async (userData: RegisterData): Promise<boolean> => {
+  const register = async (data: RegisterData): Promise<boolean> => {
     try {
-      setIsLoading(true);
-      const response = await mockRegister(userData);
+      console.log('📝 Attempting registration:', data.email);
       
-      if (response) {
-        await setStorageItem(AUTH_TOKEN_KEY, response.token);
-        await setStorageItem(USER_DATA_KEY, JSON.stringify(response.user));
-        setUser(response.user);
-        return true;
+      // Get existing users
+      const usersData = await AsyncStorage.getItem('users');
+      const users = usersData ? JSON.parse(usersData) : [];
+      
+      // Check if email already exists
+      const emailExists = users.some((u: any) => 
+        u.email.toLowerCase() === data.email.toLowerCase()
+      );
+      
+      if (emailExists) {
+        console.log('❌ Email already exists');
+        return false;
       }
-      return false;
+      
+      // Create new user
+      const newUser = {
+        id: Date.now().toString(),
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password,
+      };
+      
+      // Add to users array
+      users.push(newUser);
+      await AsyncStorage.setItem('users', JSON.stringify(users));
+      
+      // Set as current user
+      const userData = {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+      };
+      
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      console.log('✅ Registration successful:', userData);
+      return true;
     } catch (error) {
-      console.error('Register error:', error);
+      console.error('❌ Registration error:', error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async () => {
     try {
-      await removeStorageItem(AUTH_TOKEN_KEY);
-      await removeStorageItem(USER_DATA_KEY);
+      await AsyncStorage.removeItem('user');
       setUser(null);
+      console.log('✅ Logout successful');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ Logout error:', error);
     }
   };
 
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    login,
-    register,
-    logout,
-    isAuthenticated: !!user
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        register,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };

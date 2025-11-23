@@ -1,96 +1,63 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Platform } from 'react-native';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ThemeContextType {
   isDarkMode: boolean;
-  toggleDarkMode: () => Promise<void>;
-  colorScheme: 'light' | 'dark';
+  toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType>({
+  isDarkMode: false,
+  toggleTheme: () => {},
+});
 
-// Check if localStorage is available
-const isLocalStorageAvailable = () => {
-  try {
-    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
-  } catch (e) {
-    return false;
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    console.warn('useTheme must be used within ThemeProvider');
+    return { isDarkMode: false, toggleTheme: () => {} };
   }
+  return context;
 };
 
-// Helper function to handle storage for both web and native
-const setThemeStorage = async (value: string): Promise<void> => {
-  try {
-    if (Platform.OS === 'web' && isLocalStorageAvailable()) {
-      localStorage.setItem('theme_preference', value);
-    } else {
-      await AsyncStorage.setItem('theme_preference', value);
-    }
-  } catch (error) {
-    console.error('Error saving theme preference:', error);
-  }
-};
-
-const getThemeStorage = async (): Promise<string | null> => {
-  try {
-    if (Platform.OS === 'web' && isLocalStorageAvailable()) {
-      return localStorage.getItem('theme_preference');
-    } else {
-      return await AsyncStorage.getItem('theme_preference');
-    }
-  } catch (error) {
-    console.error('Error loading theme preference:', error);
-    return null;
-  }
-};
-
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Load saved theme preference on mount
   useEffect(() => {
-    loadThemePreference();
+    loadTheme();
   }, []);
 
-  const loadThemePreference = async () => {
+  const loadTheme = async () => {
     try {
-      const saved = await getThemeStorage();
-      if (saved !== null) {
-        setIsDarkMode(saved === 'dark');
+      const savedTheme = await AsyncStorage.getItem('theme');
+      console.log('🎨 Loading saved theme:', savedTheme);
+      
+      if (savedTheme !== null) {
+        setIsDarkMode(savedTheme === 'dark');
       }
     } catch (error) {
-      console.error('Error loading theme preference:', error);
+      console.error('❌ Error loading theme:', error);
     }
   };
 
-  const toggleDarkMode = async () => {
+  const toggleTheme = async () => {
     try {
-      const newMode = !isDarkMode;
-      setIsDarkMode(newMode);
-      await setThemeStorage(newMode ? 'dark' : 'light');
+      const newTheme = !isDarkMode;
+      console.log('🎨 Toggling theme to:', newTheme ? 'dark' : 'light');
+      
+      setIsDarkMode(newTheme);
+      await AsyncStorage.setItem('theme', newTheme ? 'dark' : 'light');
+      
+      console.log('✅ Theme saved successfully');
     } catch (error) {
-      console.error('Error saving theme preference:', error);
+      console.error('❌ Error saving theme:', error);
     }
   };
 
   return (
-    <ThemeContext.Provider
-      value={{
-        isDarkMode,
-        toggleDarkMode,
-        colorScheme: isDarkMode ? 'dark' : 'light',
-      }}
-    >
+    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
-}
+};
 
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
-  }
-  return context;
-}

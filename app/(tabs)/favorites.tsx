@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
@@ -8,20 +8,24 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
+const LOGO = require('@/assets/images/logo.png');
+
 export default function FavoritesScreen() {
   const dispatch = useAppDispatch();
-  const { favorites } = useAppSelector((state) => state.favorites);
+  const favorites = useAppSelector((state) => state.favorites?.favorites || []);
   const primaryColor = useThemeColor({}, 'tint');
 
-  const handleRemoveFavorite = (team: any) => {
-    dispatch(removeFavorite(team));
+  const handleRemoveFavorite = (item: any) => {
+    dispatch(removeFavorite(item));
   };
 
-  const handleTeamPress = (team: any) => {
-    router.push({
-      pathname: '/(tabs)/team/[id]' as const,
-      params: { id: team.idTeam }
-    });
+  const handleItemPress = (item: any) => {
+    if (item.idTeam) {
+      // Navigate to team details (you can implement this later)
+      console.log('Navigate to team:', item.idTeam);
+    } else if (item.idPlayer) {
+      router.push(`/player/${item.idPlayer}`);
+    }
   };
 
   return (
@@ -29,11 +33,13 @@ export default function FavoritesScreen() {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <ThemedText type="title" style={styles.title}>
-            ❤️ My Favorites
-          </ThemedText>
+          <Image 
+            source={LOGO}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <ThemedText style={styles.subtitle}>
-            {favorites.length} team{favorites.length !== 1 ? 's' : ''} saved
+            {favorites.length} item{favorites.length !== 1 ? 's' : ''} saved
           </ThemedText>
         </View>
 
@@ -47,38 +53,33 @@ export default function FavoritesScreen() {
             </ThemedText>
             <TouchableOpacity
               style={styles.exploreCTA}
-              onPress={() => router.navigate('/(tabs)/explore' as any)}
+              onPress={() => router.push('/(tabs)')}
             >
-              <ThemedText style={styles.exploreCTAText}>Explore Teams</ThemedText>
+              <ThemedText style={styles.exploreCTAText}>Explore Matches</ThemedText>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.favoritesList}>
-            {favorites.map((favorite) => (
+            {favorites.map((favorite: any, index: number) => (
               <TouchableOpacity
-                key={favorite.idTeam}
+                key={favorite.idTeam || favorite.idPlayer || index}
                 style={styles.favoriteCard}
-                onPress={() => handleTeamPress(favorite)}
+                onPress={() => handleItemPress(favorite)}
               >
-                {favorite.strTeamBadge && (
+                {(favorite.strTeamBadge || favorite.strThumb) && (
                   <Image
-                    source={{ uri: favorite.strTeamBadge }}
-                    style={styles.teamImage}
+                    source={{ uri: favorite.strTeamBadge || favorite.strThumb }}
+                    style={styles.itemImage}
                     resizeMode="contain"
                   />
                 )}
                 <View style={styles.favoriteInfo}>
                   <ThemedText style={styles.favoriteName}>
-                    {favorite.strTeam}
+                    {favorite.strTeam || favorite.strPlayer || 'Unknown'}
                   </ThemedText>
                   <ThemedText style={styles.favoriteLeague}>
-                    {favorite.strLeague}
+                    {favorite.strLeague || favorite.strPosition || 'N/A'}
                   </ThemedText>
-                  {favorite.intFormedYear && (
-                    <ThemedText style={styles.favoriteYear}>
-                      Founded: {favorite.intFormedYear}
-                    </ThemedText>
-                  )}
                 </View>
                 <TouchableOpacity
                   style={styles.removeButton}
@@ -98,13 +99,20 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   scrollView: {
     flex: 1,
   },
   header: {
     padding: 20,
-    paddingTop: 16,
+    paddingTop: 48,
+    backgroundColor: '#fff',
+  },
+  logoImage: {
+    width: 120,
+    height: 50,
+    marginBottom: 16,
   },
   title: {
     fontSize: 28,
@@ -120,7 +128,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-    marginTop: 40,
+    marginTop: 80,
   },
   emptyTitle: {
     fontSize: 20,
@@ -148,7 +156,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   favoriteCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f5f5',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -156,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  teamImage: {
+  itemImage: {
     width: 60,
     height: 60,
     borderRadius: 8,
@@ -174,11 +182,8 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginBottom: 2,
   },
-  favoriteYear: {
-    fontSize: 11,
-    opacity: 0.6,
-  },
   removeButton: {
     padding: 8,
   },
 });
+

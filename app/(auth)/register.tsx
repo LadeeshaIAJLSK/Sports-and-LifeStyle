@@ -36,13 +36,21 @@ export default function RegisterScreen() {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
-    const success = await register(data);
-    if (success) {
+  console.log('📝 Register attempt:', data);
+  const success = await register(data);
+  console.log('📊 Register result:', success);
+  
+  if (success) {
+    console.log('✅ Registration successful, navigating to tabs');
+    // Add small delay to ensure state updates
+    setTimeout(() => {
       router.replace('/(tabs)');
-    } else {
-      Alert.alert('Error', 'Registration failed. Please try again.');
-    }
-  };
+    }, 100);
+  } else {
+    console.log('❌ Registration failed');
+    Alert.alert('Error', 'Registration failed. Email may already exist.');
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>

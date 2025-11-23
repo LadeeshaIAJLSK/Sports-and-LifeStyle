@@ -34,13 +34,21 @@ export default function LoginScreen() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    const success = await login(data.email, data.password);
-    if (success) {
+  console.log('🔑 Login attempt:', data.email);
+  const success = await login(data.email, data.password);
+  console.log('📊 Login result:', success);
+  
+  if (success) {
+    console.log('✅ Login successful, navigating to tabs');
+    // Add small delay to ensure state updates
+    setTimeout(() => {
       router.replace('/(tabs)');
-    } else {
-      Alert.alert('Error', 'Invalid email or password');
-    }
-  };
+    }, 100);
+  } else {
+    console.log('❌ Login failed');
+    Alert.alert('Error', 'Invalid email or password. Please try again.');
+  }
+};
 
   const handleSignUp = () => {
     router.push('/(auth)/register');
